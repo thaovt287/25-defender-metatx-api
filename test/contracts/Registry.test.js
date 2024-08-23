@@ -43,4 +43,3 @@ describe("contracts/Registry", function() {
     expect(await registry.names(signer.address)).to.equal('meta-txs');
   });
 });
-
