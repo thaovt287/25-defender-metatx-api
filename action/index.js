@@ -4,7 +4,7 @@ const { ethers } = require("ethers");
 const { ForwarderAbi } = require("../src/forwarder");
 const ForwarderAddress = require("../deploy.json").ERC2771Forwarder;
 
-async function relay(forwarder, request, signature, whitelist) {
+async function relay(forwarder, request, whitelist) {
   // Decide if we want to relay this request based on a whitelist
   const accepts = !whitelist || whitelist.includes(request.to);
   if (!accepts) throw new Error(`Rejected request to ${request.to}`);
@@ -20,7 +20,7 @@ async function relay(forwarder, request, signature, whitelist) {
     request.gas,
     request.deadline,
     request.data,
-    signature,
+    request.signature,
   ];
   console.log(`befor verify`, valuesArray);
   const valid = await forwarder.verify(valuesArray);
@@ -28,8 +28,8 @@ async function relay(forwarder, request, signature, whitelist) {
 
   // Send meta-tx through relayer to the forwarder contract
   const gasLimit = (parseInt(request.gas) + 50000).toString();
-  console.log(`relay`, { ...request, signature, gasLimit });
-  return await forwarder.execute({ ...request, signature, gasLimit });
+  console.log(`relay`, { ...request, gasLimit });
+  return await forwarder.execute({ ...request, gasLimit });
 }
 
 async function handler(event) {
