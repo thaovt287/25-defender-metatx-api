@@ -17,11 +17,28 @@ const ForwardRequest = [
 	{ name: "deadline", type: "uint48" },
 	{ name: "data", type: "bytes" },
 ];
+const MintBadgeData = [
+	{
+		name: "adminWallet",
+		type: "address",
+	},
+	{
+		name: "to",
+		type: "address",
+	},
+	{
+		name: "idBadge",
+		type: "uint256",
+	},
+	{
+		name: "idToken",
+		type: "uint256",
+	},
+]
 
 function getMetaTxTypeData(chainId, verifyingContract) {
 	return {
 		types: {
-			// EIP712Domain,
 			ForwardRequest,
 		},
 		domain: {
@@ -31,6 +48,21 @@ function getMetaTxTypeData(chainId, verifyingContract) {
 			verifyingContract,
 		},
 		primaryType: "ForwardRequest",
+	};
+}
+
+function getMetaTxTypeDataMintBadge(chainId, verifyingContract) {
+	return {
+		types: {
+			MintBadgeData,
+		},
+		domain: {
+			name: "BadgeV1",
+			version: "1",
+			chainId,
+			verifyingContract,
+		},
+		primaryType: "MintBadgeData",
 	};
 }
 
@@ -84,6 +116,14 @@ async function buildTypedData(forwarder, request) {
 	return { ...typeData, message: request };
 }
 
+async function buildTypedDataBadge(badgeContract, request) {
+	const chainId = await badgeContract.provider
+		.getNetwork()
+		.then((n) => n.chainId);
+	const typeData = getMetaTxTypeDataMintBadge(chainId, badgeContract.address);
+	return { ...typeData, message: request };
+}
+
 async function signMetaTxRequest(signer, forwarder, input) {
 	const request = await buildRequest(forwarder, input);
 	const toSign = await buildTypedData(forwarder, request);
@@ -92,8 +132,16 @@ async function signMetaTxRequest(signer, forwarder, input) {
 	return request;
 }
 
+async function signMetaBadge(signer, badgeContract, input) {
+	const toSign = await buildTypedDataBadge(badgeContract, input);
+	// const signature = await signTypedData(signer, input.from, toSign);
+	request.signature = await signTypedData(signer, input.adminAddress, toSign);
+	return request;
+}
+
 module.exports = {
 	signMetaTxRequest,
 	buildRequest,
 	buildTypedData,
+	signMetaBadge,
 };
